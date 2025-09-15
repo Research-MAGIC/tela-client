@@ -2,8 +2,8 @@
 """
 Example: Conversation history management with Tela client
 
-This example demonstrates how to properly manage conversation history
-and send messages with context aggregation using 2025 best practices.
+This example demonstrates tradional stateless and manual history management
+Advanced ones will depend of your AI solutioning architecture.
 """
 
 import os
