@@ -5,14 +5,15 @@ Official Python SDK for the Tela API (Fabric by MAGIC Research) - OpenAI-compati
 ## Features
 
 - 🔄 **OpenAI SDK Compatible** - Easy migration from OpenAI
-- 💬 **Conversation History** - Manual conversation tracking and management
+- 💬 **Conversation History** - Manual and automatic conversation tracking
+- 🤖 **High-level Chat API** - `send_message()` with automatic context management
 - 🌊 **Streaming Support** - Real-time responses with SSE
 - ⚡ **Async/Await** - High-performance async operations
 - 🛠️ **Tool Calling** - Function/tool support
 - 🖼️ **Multimodal** - Image input support
 - 📊 **JSON Mode** - Structured outputs
-- 💾 **Persistence** - Save and load conversations to JSON
-- 🔍 **Model Discovery** - List and inspect available models
+- 💾 **Export & Persistence** - Export conversations in multiple formats (JSON, text, markdown)
+- 🔍 **Model Discovery** - List, inspect and get capabilities of available models
 
 ## Installation
 
@@ -146,9 +147,16 @@ response = client.chat.completions.create(
 conv.add_message("assistant", response.choices[0].message.content)
 ```
 
-### Conversation Management
+### Advanced Conversation Management
 
 ```python
+# High-level conversation method (handles context automatically)
+response = client.send_message(
+    message="How do I reset my password?",
+    conversation_id="support-ticket-123"
+)
+print(response)
+
 # List all conversations
 conversation_ids = client.list_conversations()
 print(f"Found {len(conversation_ids)} conversations")
@@ -158,9 +166,13 @@ conv = client.get_conversation("support-ticket-123")
 if conv:
     print(f"Conversation has {len(conv.messages)} messages")
 
-# Save/Load conversations
-client.history.save("backup.json")
-client.history.load("backup.json")
+# Export conversation in different formats
+json_data = client.export_conversation("support-ticket-123", format="json")
+text_data = client.export_conversation("support-ticket-123", format="text")
+markdown_data = client.export_conversation("support-ticket-123", format="markdown")
+
+# Auto-save conversations (if persistence file configured in client init)
+client.history.save()
 ```
 
 ## Advanced Features
@@ -324,18 +336,29 @@ client.chat.completions.create(
 ### Available Methods
 
 ```python
-# Model discovery
+# Model discovery and information
 models = client.get_models()
+model_info = client.get_model_info("qwen3-max")
+capabilities = client.get_model_capabilities("qwen3-max")
+available_models = client.list_available_models()
 
-# Conversation management
+# High-level conversation
+response = client.send_message("Hello", conversation_id="chat-1")
+
+# Manual conversation management
 conv = client.create_conversation(conversation_id: str = None)
 conv = client.get_conversation(conversation_id: str)
 ids = client.list_conversations()
 messages = client.get_conversation_context(conversation_id: str)
 
-# History persistence
-client.history.save(filename: str)
-client.history.load(filename: str)
+# Export conversations
+data = client.export_conversation(conversation_id: str, format: str = "json")
+
+# History management and persistence
+client.history.save()  # Save to configured persistence_file
+client.history.delete_conversation("chat-1")
+client.history.clear_all_conversations()
+stats = client.history.get_stats()
 ```
 
 ## Development
