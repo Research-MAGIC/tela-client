@@ -1,28 +1,26 @@
 # Tela Client - Python SDK
 
-Official Python SDK for the Tela API (Fabric by MAGIC Research) - OpenAI-compatible with advanced conversation history management.
+Official Python SDK for the Tela API (Fabric by MAGIC Research) - OpenAI-compatible with conversation history management.
 
 ## Features
 
 - 🔄 **OpenAI SDK Compatible** - Easy migration from OpenAI
-- 💬 **Conversation History** - Automatic tracking and management
-- 📝 **Smart Summarization** - Best practices for conversation summaries
+- 💬 **Conversation History** - Manual conversation tracking and management
 - 🌊 **Streaming Support** - Real-time responses with SSE
 - ⚡ **Async/Await** - High-performance async operations
 - 🛠️ **Tool Calling** - Function/tool support
 - 🖼️ **Multimodal** - Image input support
 - 📊 **JSON Mode** - Structured outputs
-- 💾 **Persistence** - Save and load conversations
+- 💾 **Persistence** - Save and load conversations to JSON
+- 🔍 **Model Discovery** - List and inspect available models
 
 ## Installation
 
 ```bash
+# Install from source (development)
 pip install -e .
-```
 
-Or install from GitHub:
-
-```bash
+# Or install from GitHub
 pip install git+https://github.com/Research-MAGIC/tela-client.git
 ```
 
@@ -40,11 +38,9 @@ response = client.chat.completions.create(
 )
 print(response.choices[0].message.content)
 
-# With conversation history
-response = client.chat.completions.create_with_history(
-    user_message="What's the weather like?",
-    conversation_id="weather-chat"
-)
+# List available models
+models = client.get_models()
+print(f"Available models: {[model.id for model in models.data]}")
 ```
 
 ## Configuration
@@ -87,7 +83,7 @@ response = client.chat.completions.create(
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Explain quantum computing"}
     ],
-    model="wizard",  # Optional, defaults to "wizard"
+    model="qwen3-max",  # Use an available model
     temperature=0.5,
     max_tokens=5000
 )
@@ -128,91 +124,43 @@ asyncio.run(main())
 
 ## Conversation History Management
 
-### Automatic History Tracking
-
-```python
-# Create a conversation with automatic history
-response = client.chat.completions.create_with_history(
-    user_message="I need help with Python",
-    conversation_id="python-help",
-    system_message="You are a Python expert."
-)
-
-# Continue the conversation - context is maintained
-response = client.chat.completions.create_with_history(
-    user_message="How do I use decorators?",
-    conversation_id="python-help"  # Same ID continues conversation
-)
-```
-
 ### Manual Conversation Management
 
 ```python
 # Create a conversation
 conv = client.create_conversation("support-ticket-123")
 
-# Add messages
-conv.add_user_message("I can't log in")
-conv.add_assistant_message("Let me help you with that")
+# Add messages manually
+conv.add_message("user", "I can't log in")
+conv.add_message("assistant", "Let me help you with that")
 
-# Use conversation in completions
+# Get conversation context for API calls
+messages = client.get_conversation_context(conversation_id="support-ticket-123")
+
+# Use in chat completions
 response = client.chat.completions.create(
-    messages=[{"role": "user", "content": "My username is john@example.com"}],
-    conversation=conv,
-    save_to_history=True,
-    use_conversation_context=True
+    messages=messages + [{"role": "user", "content": "My username is john@example.com"}]
 )
+
+# Add the response to conversation
+conv.add_message("assistant", response.choices[0].message.content)
 ```
 
-### Conversation Summarization
-
-Following best practices from the documentation, conversations are formatted as DATA blocks:
+### Conversation Management
 
 ```python
-# Summarize a conversation
-summary = client.chat.completions.summarize_conversation(
-    conversation_id="support-ticket-123",
-    format="paragraph"  # or "bullets" or "json"
-)
+# List all conversations
+conversation_ids = client.list_conversations()
+print(f"Found {len(conversation_ids)} conversations")
 
-# The SDK automatically formats conversations to prevent continuation
-# Uses the best practice of treating logs as static data
-```
+# Get a specific conversation
+conv = client.get_conversation("support-ticket-123")
+if conv:
+    print(f"Conversation has {len(conv.messages)} messages")
 
-### Context Window Management
-
-```python
-# Manage long conversations
-conv = client.get_conversation("long-chat")
-
-# Get messages that fit in context window
-messages = conv.get_context_window(
-    max_tokens=3000,
-    preserve_system=True  # Keep system message
-)
-
-# Use with limited context
-response = client.chat.completions.create(
-    messages=[{"role": "user", "content": "Summarize our discussion"}],
-    conversation=conv,
-    context_window_tokens=3000
-)
-```
-
-### Export and Import
-
-```python
-# Export conversation
-data = client.export_conversation(
-    "support-ticket-123",
-    format="json"  # or "text" or "markdown"
-)
-
-# Save all conversations
-client.history.save("conversations_backup.json")
-
-# Load conversations
-client.history.load("conversations_backup.json")
+# Save/Load conversations
+client.history.save("backup.json")
+client.history.load("backup.json")
 ```
 
 ## Advanced Features
@@ -363,7 +311,7 @@ Tela(
 ```python
 client.chat.completions.create(
     messages: List[Dict],         # Required
-    model: str = "wizard",       # Model to use
+    model: str = None,           # Model to use (auto-selected if None)
     temperature: float = 1.0,    # Randomness (0-2)
     max_tokens: int = None,      # Max response length
     stream: bool = False,        # Enable streaming
@@ -373,29 +321,21 @@ client.chat.completions.create(
 )
 ```
 
-### Conversation Methods
+### Available Methods
 
 ```python
-# Create conversation
+# Model discovery
+models = client.get_models()
+
+# Conversation management
 conv = client.create_conversation(conversation_id: str = None)
-
-# Get conversation
 conv = client.get_conversation(conversation_id: str)
-
-# List all conversations
 ids = client.list_conversations()
+messages = client.get_conversation_context(conversation_id: str)
 
-# Summarize
-summary = client.summarize_conversation(
-    conversation_id: str,
-    format: str = "paragraph"
-)
-
-# Export
-data = client.export_conversation(
-    conversation_id: str,
-    format: str = "json"
-)
+# History persistence
+client.history.save(filename: str)
+client.history.load(filename: str)
 ```
 
 ## Development
@@ -448,21 +388,21 @@ make all
 
 See the `examples/` directory for complete examples:
 
-- `basic_usage.py` - Basic chat completions
-- `conversation_history.py` - History management
-- `streaming.py` - Streaming responses
-- `async_usage.py` - Async operations
-- `function_calling.py` - Tool/function calling
-- `json_mode.py` - Structured outputs
-- `multimodal.py` - Image inputs
-- `error_handling.py` - Error handling
-- `advanced_usage.py` - Advanced features
+- `basic_test.py` - Basic chat completions and model listing
+- `conversation_history.py` - Manual conversation history management
+- `streaming_cli.py` - Streaming responses in CLI
+- `streaming_nicegui.py` - Streaming with NiceGUI interface
+- `tool_calling_cli.py` - Tool/function calling in CLI
+- `tool_calling_nicegui.py` - Tool calling with NiceGUI
+- `endpoint_information.py` - Endpoint and model information
+- `list_models.py` - Model discovery and capabilities
+- `advanced_nicegui_test.py` - Advanced NiceGUI features
+- `basic_nicegui_test.py` - Basic NiceGUI chat interface
 
 ## Support
 
-- Documentation: https://docs.telaos.com
 - GitHub: https://github.com/Research-MAGIC/tela-client
-- Email: support@researchmagic.com
+- Email: rodrigo@researchmagic.com
 
 ## License
 
