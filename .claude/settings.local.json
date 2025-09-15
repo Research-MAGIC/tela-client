@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_client.py -v)",
+      "Bash(python -m pytest tests/test_conversation_history.py -v)",
+      "Bash(python -m pytest tests/test_integration.py::TestRealAPIIntegration::test_simple_completion -v -s)",
+      "Bash(python -m pytest tests/test_integration.py -v)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(rm:*)",
+      "Bash(pip show:*)",
+      "Bash(grep:*)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
