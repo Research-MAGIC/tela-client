@@ -81,20 +81,10 @@ class ModelCapabilities(BaseModel):
             capabilities.default_temperature = 0.2  # Lower temperature for coding
         
         # Reasoning/thinking models
-        if any(reasoning_keyword in model_lower for reasoning_keyword in 
+        if any(reasoning_keyword in model_lower for reasoning_keyword in
                ['thinking', 'reasoning', 'r1']):
             capabilities.default_temperature = 0.7
-            
-        # Large models typically have higher context lengths
-        if any(size_indicator in model_lower for size_indicator in 
-               ['405b', '235b', '120b', '80b']):
-            capabilities.max_context_length = 32768
-        elif any(size_indicator in model_lower for size_indicator in 
-                 ['70b', '30b', '27b']):
-            capabilities.max_context_length = 16384
-        else:
-            capabilities.max_context_length = 8192
-            
+
         return capabilities
 
 
