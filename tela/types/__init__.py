@@ -8,12 +8,21 @@ from .chat import (
     ChatCompletionChoice,
 )
 
+from .chats import (
+    Chat as ServerChat,
+    ChatList,
+    ChatPaginatedResponse,
+)
+
 __all__ = [
     "Chat",
     "AsyncChat",
-    "Completions", 
+    "Completions",
     "AsyncCompletions",
     "ChatCompletion",
     "ChatCompletionMessage",
     "ChatCompletionChoice",
+    "ServerChat",
+    "ChatList",
+    "ChatPaginatedResponse",
 ]

@@ -22,10 +22,33 @@ from ._history import (
 )
 from .types.models import (
     Model,
-    ModelList, 
+    ModelList,
     ModelCapabilities,
     UsageInfo,
     ParameterInfo,
+)
+from .types.chats import (
+    Chat as ServerChat,
+    ChatList,
+    ChatPaginatedResponse,
+)
+from ._chats import (
+    Chats,
+    AsyncChats,
+)
+from ._audio import (
+    Audio,
+    AsyncAudio,
+    Transcriptions,
+    AsyncTranscriptions,
+)
+from .types.audio import (
+    TranscriptionResponse,
+    TranscriptionSegment,
+    TranscriptionRequest,
+    VoiceListResponse,
+    TTSResponse,
+    Voice,
 )
 
 __all__ = [
@@ -43,9 +66,28 @@ __all__ = [
     # Model information
     "Model",
     "ModelList",
-    "ModelCapabilities", 
+    "ModelCapabilities",
     "UsageInfo",
     "ParameterInfo",
+
+    # Chat Management
+    "ServerChat",
+    "ChatList",
+    "ChatPaginatedResponse",
+    "Chats",
+    "AsyncChats",
+
+    # Audio
+    "Audio",
+    "AsyncAudio",
+    "Transcriptions",
+    "AsyncTranscriptions",
+    "TranscriptionResponse",
+    "TranscriptionSegment",
+    "TranscriptionRequest",
+    "VoiceListResponse",
+    "TTSResponse",
+    "Voice",
     
     # Exceptions
     "TelaError",

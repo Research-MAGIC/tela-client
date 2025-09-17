@@ -131,21 +131,27 @@ class HistoryManager:
         self,
         enabled: bool = True,
         persistence_file: Optional[str] = None,
-        max_conversations: int = 1000
+        max_conversations: int = 1000,
+        client: Optional[Any] = None,
+        server_sync: bool = False
     ) -> None:
         """
         Initialize the history manager
-        
+
         Args:
             enabled: Whether history tracking is enabled
             persistence_file: Optional file path for persisting history
             max_conversations: Maximum number of conversations to keep in memory
+            client: Optional Tela client for server-side chat management
+            server_sync: Whether to sync conversations with server-side chat management
         """
         self.enabled = enabled
         self.persistence_file = persistence_file
         self.max_conversations = max_conversations
         self._conversations: Dict[str, ConversationHistory] = {}
-        
+        self._client = client
+        self.server_sync = server_sync and client is not None
+
         if self.enabled and self.persistence_file:
             self._load_from_file()
     
@@ -311,5 +317,125 @@ class HistoryManager:
             "total_messages": total_messages,
             "persistence_enabled": bool(self.persistence_file),
             "persistence_file": self.persistence_file,
-            "max_conversations": self.max_conversations
+            "max_conversations": self.max_conversations,
+            "server_sync": self.server_sync
         }
+
+    def sync_with_server(self) -> Dict[str, Any]:
+        """
+        Sync local conversations with server-side chat management
+
+        Returns:
+            Dictionary with sync statistics
+        """
+        if not self.server_sync or not hasattr(self._client, 'chats'):
+            return {"synced": False, "reason": "Server sync not enabled or client not available"}
+
+        try:
+            # Get server-side chats
+            server_chats = self._client.chats.list(page_size=100)
+            synced_count = 0
+            errors = []
+
+            # Check if we got an empty response due to endpoint unavailability
+            if not server_chats.data and server_chats.total == 0:
+                return {
+                    "synced": True,
+                    "synced_count": 0,
+                    "total_server_chats": 0,
+                    "errors": ["Server chat endpoints may not be available"],
+                    "note": "Graceful degradation - no server chats available"
+                }
+
+            for server_chat in server_chats.data:
+                try:
+                    # Check if we already have this conversation
+                    chat_id = getattr(server_chat, 'chat_id', getattr(server_chat, 'id', None))
+                    if not chat_id:
+                        continue
+
+                    local_conv = self.get_conversation(chat_id)
+                    if not local_conv:
+                        # Create local conversation from server chat
+                        # Use current time if server doesn't provide timestamps
+                        created_at = getattr(server_chat, 'created_at', None) or datetime.utcnow()
+                        updated_at = getattr(server_chat, 'updated_at', None) or datetime.utcnow()
+
+                        local_conv = ConversationHistory(
+                            id=chat_id,
+                            created_at=created_at,
+                            updated_at=updated_at,
+                            metadata={
+                                "server_title": getattr(server_chat, 'title', None),
+                                "server_metadata": getattr(server_chat, 'metadata', None),
+                                "synced_from_server": True
+                            }
+                        )
+                        self._conversations[chat_id] = local_conv
+                        synced_count += 1
+                except Exception as e:
+                    chat_id_for_error = getattr(server_chat, 'chat_id', getattr(server_chat, 'id', 'unknown'))
+                    errors.append(f"Error syncing chat {chat_id_for_error}: {str(e)}")
+
+            return {
+                "synced": True,
+                "synced_count": synced_count,
+                "total_server_chats": len(server_chats.data),
+                "errors": errors
+            }
+
+        except Exception as e:
+            return {"synced": False, "reason": f"Sync failed: {str(e)}"}
+
+    def create_server_chat(
+        self,
+        conversation_id: Optional[str] = None,
+        module_id: str = "chat",
+        message: str = ""
+    ) -> Optional[str]:
+        """
+        Create a new chat on the server and optionally sync locally
+
+        Args:
+            conversation_id: Optional conversation ID (for local tracking)
+            module_id: Module ID for the chat (default: "chat")
+            message: Initial message content (default: "")
+
+        Returns:
+            Chat ID if created successfully, None otherwise
+        """
+        if not self.server_sync or not hasattr(self._client, 'chats'):
+            return None
+
+        try:
+            server_response = self._client.chats.create(
+                module_id=module_id,
+                message=message
+            )
+
+            # Extract chat_id from response
+            chat_id = server_response.get("chat_id")
+            if not chat_id:
+                return None
+
+            # Check if this is a local fallback chat ID
+            is_local_fallback = chat_id.startswith("local_")
+
+            # Create local conversation if requested
+            if conversation_id or self.enabled:
+                local_conv = ConversationHistory(
+                    id=chat_id,
+                    metadata={
+                        "server_module_id": module_id,
+                        "server_initial_message": message,
+                        "synced_with_server": not is_local_fallback,
+                        "local_fallback": is_local_fallback
+                    }
+                )
+                if self.enabled:
+                    self._conversations[chat_id] = local_conv
+
+            return chat_id
+
+        except Exception:
+            return None

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tela-client"
-version = "1.0.0"
-description = "The official Python library for the Tela API with conversation history support"
+version = "1.2.0"
+description = "The official Python library for the Tela API with chat, audio transcription, and text-to-speech capabilities"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -29,7 +29,7 @@ dependencies = [
     "typing-extensions>=4.5,<5",
     "pydantic>=2.0,<3",
 ]
-keywords = ["openai", "fabric", "llm", "api-client", "chat", "ai"]
+keywords = ["openai", "fabric", "llm", "api-client", "chat", "ai", "audio", "speech-to-text", "text-to-speech", "transcription", "tts", "stt"]
 
 [project.optional-dependencies]
 dev = [
@@ -39,6 +39,10 @@ dev = [
     "black>=22.3.0,<24",
     "mypy>=1.0,<2",
     "ruff>=0.1.0",
+]
+ui = [
+    "nicegui>=1.4.0,<2",
+    "python-dotenv>=1.0.0,<2",
 ]
 
 [project.urls]

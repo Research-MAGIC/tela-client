@@ -128,15 +128,27 @@ class BaseClient:
         elif isinstance(timeout, float):
             timeout = httpx.Timeout(timeout)
         
-        return self._client.build_request(
-            method=method,
-            url=url,
-            json=json_data,
-            files=files,
-            params=params,
-            headers=headers,
-            timeout=timeout,
-        )
+        # When files are provided with data, use data parameter instead of json
+        if files and json_data:
+            return self._client.build_request(
+                method=method,
+                url=url,
+                data=json_data,  # Use data for form fields with files
+                files=files,
+                params=params,
+                headers=headers,
+                timeout=timeout,
+            )
+        else:
+            return self._client.build_request(
+                method=method,
+                url=url,
+                json=json_data,
+                files=files,
+                params=params,
+                headers=headers,
+                timeout=timeout,
+            )
     
     def _process_response(
         self,

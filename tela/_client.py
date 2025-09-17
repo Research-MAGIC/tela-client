@@ -13,6 +13,8 @@ from ._types import NOT_GIVEN, NotGiven
 from ._exceptions import AuthenticationError
 from ._version import __version__
 from ._history import ConversationHistory, HistoryManager
+from ._chats import Chats, AsyncChats
+from ._audio import Audio, AsyncAudio
 from .types.chat import Chat, AsyncChat
 from .types.models import Model, ModelList, ModelCapabilities, UsageInfo, ParameterInfo
 
@@ -35,6 +37,8 @@ class Tela(SyncAPIClient):
     """
     
     chat: Chat
+    chats: Any  # Will be set to Chats in __init__
+    audio: Any  # Will be set to Audio in __init__
     history: HistoryManager
     
     def __init__(
@@ -119,11 +123,19 @@ class Tela(SyncAPIClient):
         
         # Initialize chat with history support
         self.chat = Chat(self, enable_history=enable_history)
-        
-        # Initialize history manager
+
+        # Initialize chat management resource
+        self.chats = Chats(self)
+
+        # Initialize audio resource
+        self.audio = Audio(self)
+
+        # Initialize history manager with server sync capability
         self.history = HistoryManager(
             enabled=enable_history,
-            persistence_file=history_file
+            persistence_file=history_file,
+            client=self,
+            server_sync=True
         )
     
     @property
@@ -477,6 +489,8 @@ class AsyncTela(AsyncAPIClient):
     """
     
     chat: AsyncChat
+    chats: Any  # Will be set to AsyncChats in __init__
+    audio: Any  # Will be set to AsyncAudio in __init__
     history: HistoryManager
     
     def __init__(
@@ -544,9 +558,19 @@ class AsyncTela(AsyncAPIClient):
         )
         
         self.chat = AsyncChat(self, enable_history=enable_history)
+
+        # Initialize async chat management resource
+        self.chats = AsyncChats(self)
+
+        # Initialize async audio resource
+        self.audio = AsyncAudio(self)
+
+        # Initialize history manager with server sync capability
         self.history = HistoryManager(
             enabled=enable_history,
-            persistence_file=history_file
+            persistence_file=history_file,
+            client=self,
+            server_sync=True
         )
     
     @property

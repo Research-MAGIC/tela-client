@@ -10,7 +10,10 @@
       "Bash(rm:*)",
       "Bash(pip show:*)",
       "Bash(grep:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(curl:*)",
+      "WebFetch(domain:nicegui.io)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
