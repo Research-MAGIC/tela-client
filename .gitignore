@@ -71,5 +71,8 @@ conversations.json
 .env.local
 .env.production
 
-# Build artifacts
-gh_installer.msi
+# Package verification script
+verify_package.py
+
+# Claude Code settings
+.claude/
