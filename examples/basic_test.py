@@ -21,3 +21,4 @@ try:
     print(content)
 except UnicodeEncodeError:
     print(content.encode('ascii', errors='replace').decode('ascii'))
+    
